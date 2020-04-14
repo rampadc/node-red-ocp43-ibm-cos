@@ -1,5 +1,9 @@
 # Deploy Node-RED onto OpenShift 4.3 with IBM Cloud Object Storage
 
+## Motivation
+
+Why provision a Cloudant database for every Node-RED instance when you can use a single Cloud Object Storage service and a single OpenShift cluster for the everyone in the team, and/or every participant in a hackathon.
+
 ## Setup
 
 Before beginning, ensure that you have:
