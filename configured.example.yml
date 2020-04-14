@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: editor-demo-svc
+spec:
+  selector:
+    app: editor-demo
+  type: NodePort
+  ports:
+  - name: 1880-tcp
+    port: 1880
+    targetPort: 1880
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: secure-route
+spec:
+  host: editor-demo.demo-cluster-1234.au-syd.containers.appdomain.cloud
+  port:
+    targetPort: 1880-tcp
+  tls:
+    insecureEdgeTerminationPolicy: None
+    termination: edge
+  to:
+    kind: Service
+    name: editor-demo-svc
+    weight: 100
+  wildcardPolicy: None
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: editor-demo-pvc
+  namespace: editor-demo
+  annotations:
+    ibm.io/auto-create-bucket: "true"
+    ibm.io/auto-delete-bucket: "false"
+    ibm.io/bucket: editor-demo
+    ibm.io/secret-name: cos-write-access
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+  storageClassName: ibmc-s3fs-standard-regional
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: editor-settings
+data:
+  settings.js: |
+    var fs = require("fs");
+    module.exports = {
+        uiPort: process.env.PORT || 1880,
+        mqttReconnectTime: 15000,
+        serialReconnectTime: 15000,
+        debugMaxLength: 1000,
+        adminAuth: {
+          type: "credentials",
+          users: [{
+              username: "admin",
+              password: "$2b$08$RIbOUsmL/Ej2SvO.vKrweebKWUM9yYycp.aI07OcKJtv3CClF6TSi",
+              permissions: "*"
+          }]
+        },
+        functionGlobalContext: {
+        },
+        exportGlobalContextKeys: false,
+        logging: {
+            console: {
+                level: "trace",
+                metrics: true,
+                audit: true
+            }
+        },
+        editorTheme: {
+            projects: {
+                enabled: true
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: editor-demo-deploy
+  labels:
+    app: editor-demo
+spec:
+  selector:
+    matchLabels:
+      app: editor-demo
+  template:
+    metadata:
+      labels:
+        app: editor-demo
+    spec:
+      containers:
+      - image: nodered/node-red:latest-12
+        name: editor-demo
+        volumeMounts:
+        - name: node-red-persistence
+          mountPath: /data
+        - name: editor-settings-volume
+          mountPath: /data/settings.js
+          subPath: settings.js
+        env:
+        - name: NODE_RED_HOME
+          value: /data
+        - name: NODE_RED_ENABLE_PROJECTS
+          value: "true"
+        ports:
+        - containerPort: 1880
+          protocol: TCP
+      volumes:
+      - name: node-red-persistence
+        persistentVolumeClaim:
+          claimName: editor-demo-pvc
+      - name: editor-settings-volume
+        configMap:
+          name: editor-settings
