@@ -45,4 +45,8 @@ deployment.apps/editor-demo-deploy created
 4. Check when the deployment is complete with `oc get deploy --watch`.
 5. When the deployment's current state matches the desired state, run `oc get route secure-route` to get the URL. Copy the HOST/PORT link, prepend `https://` to the link and navigate to this link in your favourite browser. 
 
-Alternatively, you can also run `oc get route secure-route -o=jsonpath="{@.spec.host}"` to get just the host. If you're feeling fancy and working on a Linux-based OS or macOS, you can also run `echo "https://$(oc get route secure-route -o=jsonpath={@.spec.host})"` to get the link.
+Alternatively, you can also run `oc get route secure-route -o=jsonpath="{@.spec.host}"` to get just the host. If you're feeling fancy and working on a Linux-based OS or macOS, you can also run the following command to get the link.
+
+```
+echo "https://$(oc get route secure-route -o=jsonpath={@.spec.host})"
+```
