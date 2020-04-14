@@ -17,7 +17,12 @@ Before beginning, ensure that you have:
 1. Install IBM COS plugin onto your OpenShift cluster in the `default` project (`oc project default`) using IBM Cloud's [instructions](https://cloud.ibm.com/docs/openshift?topic=openshift-object_storage#install_cos).
 2. Create a new project with the name you chose, e.g. `oc new-project editor-demo`. 
 3. Switch to this new project, e.g. `oc project editor-demo`.
-4. Using the retrieved `apikey` for your COS service, create a secret named `cos-write-access` inside the project with `oc create secret generic cos-write-access --type=ibm/ibmc-s3fs --from-literal=api-key=<apikey> --from-literal=service-instance-id=<GUID>`.
+4. Using the retrieved `apikey` for your COS service, create a secret named `cos-write-access` inside the project with 
+
+```
+oc create secret generic cos-write-access --type=ibm/ibmc-s3fs --from-literal=api-key=<apikey> --from-literal=service-instance-id=<GUID>
+```
+
 5. Verify that the secret has been created with `oc get secret`.
 6. Choose a [storage class](https://cloud.ibm.com/docs/openshift?topic=openshift-object_storage#configure_cos) to use with your Node-RED deployment. In the demo `all.yaml`, I selected `ibmc-s3fs-standard-regional`. **Standard** for hot data used frequently, **regional** as I did not need the resiliency of multiple regions.
 7. Decide on a name of the bucket. A new bucket is created when a persistent volume claim (PVC) is applied. By default, the name of the project is set as the bucket's name.
