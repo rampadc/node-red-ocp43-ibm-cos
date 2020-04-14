@@ -1,0 +1,136 @@
+#@ app_name = "editor-<project name>"
+#@ domain = "<cluster name>-<hash>.<region>.containers.appdomain.cloud"
+
+#@ cos_storage_class = "ibmc-s3fs-standard-regional"
+#@ cos_secret_name = "cos-write-access"
+#@ cos_storage_space = "64Mi"
+
+#@ image_name = "nodered/node-red:latest-12"
+
+#! Default Node-RED admin password: openshiftFTW
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: #@ "{}-svc".format(app_name)
+spec:
+  selector:
+    app: #@ "{}".format(app_name)
+  type: NodePort
+  ports:
+  - name: 1880-tcp
+    port: 1880
+    targetPort: 1880
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: secure-route
+spec:
+  host: #@ "{}.{}".format(app_name, domain)
+  port:
+    targetPort: 1880-tcp
+  tls:
+    insecureEdgeTerminationPolicy: None
+    termination: edge
+  to:
+    kind: Service
+    name: #@ "{}-svc".format(app_name)
+    weight: 100
+  wildcardPolicy: None
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: #@ "{}-pvc".format(app_name)
+  namespace: #@ "{}".format(app_name)
+  annotations:
+    ibm.io/auto-create-bucket: "true"
+    ibm.io/auto-delete-bucket: "false" #! must be false to use a custom name
+    ibm.io/bucket: #@ "{}".format(app_name)
+    ibm.io/secret-name: #@ "{}".format(cos_secret_name)
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: #@ "{}".format(cos_storage_space)
+  storageClassName: #@ "{}".format(cos_storage_class)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: editor-settings
+data:
+  settings.js: |
+    var fs = require("fs");
+    module.exports = {
+        uiPort: process.env.PORT || 1880,
+        mqttReconnectTime: 15000,
+        serialReconnectTime: 15000,
+        debugMaxLength: 1000,
+        adminAuth: {
+          type: "credentials",
+          users: [{
+              username: "admin",
+              password: "$2b$08$RIbOUsmL/Ej2SvO.vKrweebKWUM9yYycp.aI07OcKJtv3CClF6TSi",
+              permissions: "*"
+          }]
+        },
+        functionGlobalContext: {
+        },
+        exportGlobalContextKeys: false,
+        logging: {
+            console: {
+                level: "trace",
+                metrics: true,
+                audit: true
+            }
+        },
+        editorTheme: {
+            projects: {
+                enabled: true
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: #@ "{}-deploy".format(app_name)
+  labels:
+    app: #@ "{}".format(app_name)
+spec:
+  selector:
+    matchLabels:
+      app: #@ "{}".format(app_name)
+  template:
+    metadata:
+      labels:
+        app: #@ "{}".format(app_name)
+    spec:
+      containers:
+      - image: #@ "{}".format(image_name)
+        name: #@ "{}".format(app_name)
+        volumeMounts:
+        - name: node-red-persistence
+          mountPath: /data
+        - name: editor-settings-volume
+          mountPath: "/data/settings.js"
+          subPath: "settings.js"
+        env:
+        - name: NODE_RED_HOME
+          value: "/data"
+        - name: NODE_RED_ENABLE_PROJECTS
+          value: "true"
+        ports:
+        - containerPort: 1880
+          protocol: TCP
+      volumes:
+      - name: node-red-persistence
+        persistentVolumeClaim:
+          claimName: #@ "{}-pvc".format(app_name)
+      - name: editor-settings-volume
+        configMap:
+          name: editor-settings
+
