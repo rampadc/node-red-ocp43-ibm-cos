@@ -1,5 +1,4 @@
 #@ app_name = "editor-<project name>"
-#@ domain = "<cluster name>-<hash>.<region>.containers.appdomain.cloud"
 
 #@ cos_storage_class = "ibmc-s3fs-standard-regional"
 #@ cos_secret_name = "cos-write-access"
@@ -27,7 +26,7 @@ kind: Route
 metadata:
   name: secure-route
 spec:
-  host: #@ "{}.{}".format(app_name, domain)
+  subdomain: #@ "{}".format(app_name)
   port:
     targetPort: 1880-tcp
   tls:
