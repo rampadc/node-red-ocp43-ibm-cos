@@ -34,7 +34,7 @@ oc create secret generic cos-write-access --type=ibm/ibmc-s3fs --from-literal=ap
 ## How to use this repository
 
 1. Clone the repo.
-2. Fill in the configuration variables at the top of the file, i.e. `app_name`, `domain`, `cos_storage_class`, `cos_secret_name`, `cos_storage_space` and `image_name`. Only `app_name` and `domain` are required. Other fields are optional.
+2. Fill in the configuration variables at the top of the file, i.e. `app_name`, `cos_storage_class`, `cos_secret_name`, `cos_storage_space` and `image_name`. Only `app_name` is required.
 3. Run `ytt -f all.yaml > configured.yaml`. See `configured.example.yaml` for an example of the output.
 4. Apply the configured YAML with `oc apply -f configured.yaml`. You will get something similar to the below output
 
