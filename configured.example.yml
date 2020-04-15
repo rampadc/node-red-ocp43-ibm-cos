@@ -16,7 +16,7 @@ kind: Route
 metadata:
   name: secure-route
 spec:
-  host: editor-demo.demo-cluster-1234.au-syd.containers.appdomain.cloud
+  subdomain: editor-demo
   port:
     targetPort: 1880-tcp
   tls:
