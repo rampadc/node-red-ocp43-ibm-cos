@@ -1,5 +1,4 @@
 #@ app_name = "editor-demo"
-#@ domain = "ocp435-5290c8c8e5797924dc1ad5d2b85b37c0-0000.au-syd.containers.appdomain.cloud"
 
 #@ cos_storage_class = "ibmc-s3fs-standard-regional"
 #@ cos_secret_name = "cos-write-access"
@@ -27,7 +26,7 @@ kind: Route
 metadata:
   name: secure-route
 spec:
-  host: #@ "{}.{}".format(app_name, domain)
+  subdomain: #@ "{}".format(app_name)
   port:
     targetPort: 1880-tcp
   tls:
